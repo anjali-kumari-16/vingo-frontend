@@ -1,14 +1,19 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaEye } from "react-icons/fa";
-import { FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
-import { serverUrl } from "../App";
+import { serverUrl } from "../config";
+import axios from "axios";
 
-import axios from "axios";//Axios ek JavaScript library hai jo HTTP requests banane ke liye use hoti hai — jaise data backend (API) se frontend (React, Node.js, etc.) me lana ya bhejna.
+import { auth } from "../../firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { setUserData } from "../redux/userSlice";
+import { useDispatch } from "react-redux";
+
+
+// Initialize Firebase auth
+
 axios.defaults.withCredentials = true;
-
 
 function SignUp() {
   const primaryColor = "#ff4d2d";
@@ -17,29 +22,86 @@ function SignUp() {
   const borderColor = "#ddd";
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("user");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState(""); //When the user types their Full Name, Email, Password, or Mobile Number,
-  //we want to store those values in React state, so you can access or send them to backend later (e.g., API call).
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [mobileNumber, setMobileNumber] = useState("");
-    const handleSignUp =async () => {
-    try{
-      const result = await axios.post(`${serverUrl}/api/auth/signup`,{
-             fullName,email,password,mobileNumber,role
+  const dispatch = useDispatch()
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    mobileNumber: "",
+    role: "user",
+  });
+  //const [loading,setLoading] 
 
-      },{withCredentials:true})
-      console.log(result)
- 
 
-    }catch(error){
-      console.log(error)
-
-    }
-
-    
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    if (!formData.fullName || !formData.email || !formData.password) {
+      setError("Please fill in all fields (Full Name, Email, Password)");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const result = await axios.post(
+        `${serverUrl}/api/auth/signup`,
+        formData,
+        { withCredentials: true }
+      );
+      console.log("Signup successful:", result.data);
+      // Redirect or show success message
+      // Redirect or show success message
+      navigate("/signin"); // Redirect to login page after successful signup
+      dispatch(setUserData(result.data))
+    } catch (error) {
+      console.error("Signup error:", error);
+      setError(
+        error.response?.data?.message || "Something went wrong during sign up"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+  //Google authtentication
+  const handleGoogleAuth = async () => {
+    if (!formData.mobileNumber) {
+      //alert("Mobile number is required");
+      //alert("Mobile number is required");
+      return setError("Mobile number is required");
+    }
+
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+
+    try {
+      const { data } = await axios.post(`${serverUrl}/api/auth/google-auth`, {
+        fullName: result.user.displayName,
+        email: result.user.email,
+        role,
+        mobileNumber: formData.mobileNumber,
+      }, { withCredentials: true });
+      dispatch(setUserData(data))
+
+      //console.log("Google Sign-In result:", result);
+      // You might want to handle the successful sign-in here, e.g., send token to backend
+    } catch (error) {
+      console.error("Google Sign-In Error:", error);
+      setError("Failed to sign in with Google.");
+    }
+  };
 
   return (
     <div
@@ -47,160 +109,199 @@ function SignUp() {
       style={{ backgroundColor: bgColor }}
     >
       <div
-        className={`bg-white rounded-xl shadow-lg w-full max-w-md p-8 border-[1px]`}
-        style={{ border: `1px solid  ${borderColor}` }}
+        className="bg-white rounded-xl shadow-lg w-full max-w-md p-8 border-[1px]"
+        style={{ border: `1px solid ${borderColor}` }}
       >
-        <h1
-          className={`text-3xl font-bold mb-2`}
-          style={{ color: primaryColor }}
-        >
-          Vingo
+        <h1 className="text-3xl font-bold mb-2" style={{ color: primaryColor }}>
+          PetPuja
         </h1>
         <p className="text-gray-600 mb-8">
           Create your account to get started with delicious recipes and meal
-          planning in food delivery app.
+          planning.
         </p>
-        {/*fullName}*/}
-        <div className="mb-4">
-          <label
-            htmlFor="fullName"
-            className="block text-gray-700 font-medium mb-1"
-          >
-            Full Name
-          </label>
-          <input
-            type="text"
-            className="w-full border rounded-lg px-3 py-2 focus:outline-none "
-            placeholder="Enter your Full Name:"
-            style={{ border: `1px solid ${borderColor}` }}
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            /*value={fullName}
 
-This connects the input to React state.
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
 
-Whatever is in fullName will show inside the input box.
-
-onChange={(e) => setFullName(e.target.value)}
-
-This listens to user typing.
-
-e.target.value is the current text typed by the user.
-
-setFullName(e.target.value) updates the React state.
-
-This way, fullName always stores the latest input.*/
-          />
-        </div>
-        {/*Email*/}
-        <div className="mb-4">
-          <label
-            htmlFor="email"
-            className="block text-gray-700 font-medium mb-1"
-          >
-            Email
-          </label>
-          <input
-            type="text"
-            className="w-full border rounded-lg px-3 py-2 focus:outline-none "
-            placeholder="Enter your Email:"
-            style={{ border: `1px solid ${borderColor}` }}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        {/*Password*/}
-        <div className="mb-4">
-          <label
-            htmlFor="password"
-            className="block text-gray-700 font-medium mb-1"
-          >
-            Password
-          </label>
-          <div className="relative">
-            <input
-              type={`${showPassword ? "text" : "password"}`}
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none "
-              placeholder="Enter your password:"
-              style={{ border: `1px solid ${borderColor}` }}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <button
-              className="absolute right-3 cursor-pointer top-2.5 text-gray-500"
-              onClick={() => setShowPassword((prev) => !prev)}
+        <form onSubmit={handleSignUp}>
+          <div className="mb-4">
+            <label
+              htmlFor="fullName"
+              className="block text-gray-700 font-medium mb-1"
             >
-              {!showPassword ? <FaEye /> : <FaEyeSlash />}
-            </button>
+              Full Name
+            </label>
+            <input
+              type="text"
+              id="fullName"
+              name="fullName"
+              className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+              placeholder="Enter your Full Name"
+              style={{ border: `1px solid ${borderColor}` }}
+              value={formData.fullName}
+              onChange={handleChange}
+              required
+            />
           </div>
-        </div>
-        {/*MobileNumber*/}
-        <div className="mb-4">
-          <label
-            htmlFor="mobileNumber"
-            className="block text-gray-700 font-medium mb-1"
-          >
-            Mobile NUmber
-          </label>
-          <input
-            type="text"
-            className="w-full border rounded-lg px-3 py-2 focus:outline-none "
-            placeholder="Enter your Mobile Number:"
-            style={{ border: `1px solid ${borderColor}` }}
-            value={mobileNumber}
-            onChange={(e) => setMobileNumber(e.target.value)}
-          />
-        </div>
-        {/*Role*/}
-        <div className="mb-4">
-          <label
-            htmlFor="role"
-            className="block text-gray-700 font-medium mb-1"
-          >
-            Role
-          </label>
 
-          <div className="flex gap-2">
-            {["user", "owner", "deliveryboy"].map((r) => (
+          <div className="mb-4">
+            <label
+              htmlFor="email"
+              className="block text-gray-700 font-medium mb-1"
+            >
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+              placeholder="Enter your email"
+              style={{ border: `1px solid ${borderColor}` }}
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="mb-4 relative">
+            <label
+              htmlFor="password"
+              className="block text-gray-700 font-medium mb-1"
+            >
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                className="w-full border rounded-lg px-3 py-2 pr-10 focus:outline-none"
+                placeholder="Enter your password"
+                style={{ border: `1px solid ${borderColor}` }}
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
               <button
-                key={r}
-                className="flex-1 w-full border rounded-lg px-3 py-2 text-center font-medium transition-colors cursor-pointer"
-                onClick={() => setRole(r)}
-                style={
-                  role === r
-                    ? { backgroundColor: primaryColor, color: "white" }
-                    : {
-                        border: `1px solid ${primaryColor}`,
-                        color: primaryColor,
-                      }
-                }
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                onClick={() => setShowPassword(!showPassword)}
               >
-                {r}
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
-            ))}
+            </div>
           </div>
-        </div>
-        {/* Sign Up Button */}
 
-        <button onClick={handleSignUp} className="w-full font-semibold rounded-lg px-4 py-2 cursor-pointer text-white bg-[#ff6600] hover:bg-[#e64323] transition duration-200">
-          Sign Up
-        </button>
-        {/* Sign Up with Google */}
+          <div className="mb-6">
+            <label
+              htmlFor="mobileNumber"
+              className="block text-gray-700 font-medium mb-1"
+            >
+              Mobile Number
+            </label>
+            <input
+              type="tel"
+              id="mobileNumber"
+              name="mobileNumber"
+              className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+              placeholder="Enter your mobile number"
+              style={{ border: `1px solid ${borderColor}` }}
+              value={formData.mobileNumber}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <button className="w-full mt-4 flex items-center cursor-pointer justify-center gap-2 border rounded-lg px-4 py-2 transition duration-200 border-gray-400 hover:bg-gray-200">
-          <FcGoogle size={20} />
-          <span>Sign up with Google</span>
-        </button>        
-        {/* Already have account */}
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-2">Role</label>
+            <div className="flex gap-4">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  className="form-radio"
+                  name="role"
+                  value="user"
+                  checked={formData.role === "user"}
+                  onChange={handleChange}
+                />
+                <span className="ml-2">User</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  className="form-radio"
+                  name="role"
+                  value="owner"
+                  checked={formData.role === "owner"}
+                  onChange={handleChange}
+                />
+                <span className="ml-2">Owner</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  className="form-radio"
+                  name="role"
+                  value="deliveryboy"
+                  checked={formData.role === "deliveryboy"}
+                  onChange={handleChange}
+                />
+                <span className="ml-2">Delivery</span>
+              </label>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className={`w-full font-semibold py-3 rounded-lg transition duration-200 mb-4`}
+            style={{
+              backgroundColor: primaryColor,
+              color: "white",
+              opacity: loading ? 0.7 : 1,
+              cursor: loading ? "not-allowed" : "pointer",
+            }}
+            disabled={loading}
+          >
+            {loading ? "Signing Up..." : "Sign Up"}
+          </button>
 
 
-        <p
-          className="cursor-pointer text-center mt-4"
-          onClick={() => navigate("/signin")}
-        >
-          Already have an account?{" "}
-          <span className="text-[#ff4d2d] hover:underline">Sign In</span>
-        </p>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 px-4 hover:bg-gray-50 transition-colors"
+            onClick={handleGoogleAuth}
+          >
+            <FcGoogle className="text-xl" />
+            <span>Sign up with Google</span>
+          </button>
+
+          <p className="mt-6 text-center text-gray-600">
+            Already have an account?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/signin")}
+              className="font-medium"
+              style={{ color: primaryColor }}
+            >
+              Sign in
+            </button>
+          </p>
+        </form>
       </div>
     </div>
   );

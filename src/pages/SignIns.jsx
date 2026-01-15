@@ -4,9 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { FaEye } from "react-icons/fa";
 import { FaEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
-import { serverUrl } from "../App";
+import { serverUrl } from "../config";
 
 import axios from "axios";//Axios ek JavaScript library hai jo HTTP requests banane ke liye use hoti hai — jaise data backend (API) se frontend (React, Node.js, etc.) me lana ya bhejna.
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "../../firebase";
+import { useDispatch } from "react-redux";
+import { setUserData } from "../redux/userSlice";
 axios.defaults.withCredentials = true;
 
 
@@ -17,27 +21,51 @@ function SignIns() {
   const borderColor = "#ddd";
   const [showPassword, setShowPassword] = useState(false);
 
+  console.log("user data");
+
   const navigate = useNavigate();
-  
+
   //we want to store those values in React state, so you can access or send them to backend later (e.g., API call).
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
-    const handleSignIn =async () => {
-    try{
-      const result = await axios.post(`${serverUrl}/api/auth/signin`,{
-             email,password
+  const [error, setError] = useState("");
+  const dispatch = useDispatch()
 
-      },{withCredentials:true})
-      console.log(result)
- 
+  const handleSignIn = async () => {
+    try {
+      setError("");
+      const result = await axios.post(`${serverUrl}/api/auth/signin`, {
+        email, password
 
-    }catch(error){
+      }, { withCredentials: true })
+      dispatch(setUserData(result.data))
+
+
+    } catch (error) {
       console.log(error)
-
+      setError("Failed to sign in. Please check your credentials.");
     }
 
-    
+
+  };
+  //Google authtentication
+  const handleGoogleAuth = async () => {
+
+
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const { data } = await axios.post(`${serverUrl}/api/auth/google-auth`, {
+        email: result.user.email
+      }, { withCredentials: true });
+      dispatch(setUserData(data))
+
+      //console.log("Google Sign-In result:", result);
+      // You might want to handle the successful sign-in here, e.g., send token to backend
+    } catch (error) {
+      console.error("Google Sign-In Error:", error);
+      setError("Failed to sign in with Google.");
+    }
   };
 
 
@@ -54,13 +82,13 @@ function SignIns() {
           className={`text-3xl font-bold mb-2`}
           style={{ color: primaryColor }}
         >
-          Vingo
+          PetPuja
         </h1>
         <p className="text-gray-600 mb-8">
           SigIn In to your account to get started with delicious recipes and meal
           planning in food delivery app.
         </p>
-        
+
         {/*Email*/}
         <div className="mb-4">
           <label
@@ -75,7 +103,7 @@ function SignIns() {
             placeholder="Enter your Email:"
             style={{ border: `1px solid ${borderColor}` }}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)} required
           />
         </div>
         {/*Password*/}
@@ -93,7 +121,7 @@ function SignIns() {
               placeholder="Enter your password:"
               style={{ border: `1px solid ${borderColor}` }}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)} required
             />
             <button
               className="absolute right-3 cursor-pointer top-2.5 text-gray-500"
@@ -103,10 +131,10 @@ function SignIns() {
             </button>
           </div>
         </div>
-        <div className='text-right mb-2 text-[#ff4d2d] cursor-pointer font-medium 'onClick={()=>navigate("/forgot-password")}>
+        <div className='text-right mb-2 text-[#ff4d2d] cursor-pointer font-medium ' onClick={() => navigate("/forgot-password")}>
           Forgot Password
         </div>
-        
+
         {/* Sign In Button */}
 
         <button onClick={handleSignIn} className="w-full font-semibold rounded-lg px-4 py-2 cursor-pointer text-white bg-[#ff6600] hover:bg-[#e64323] transition duration-200">
@@ -114,10 +142,10 @@ function SignIns() {
         </button>
         {/* Sign In with Google */}
 
-        <button className="w-full mt-4 flex items-center cursor-pointer justify-center gap-2 border rounded-lg px-4 py-2 transition duration-200 border-gray-400 hover:bg-gray-200">
+        <button className="w-full mt-4 flex items-center cursor-pointer justify-center gap-2 border rounded-lg px-4 py-2 transition duration-200 border-gray-400 hover:bg-gray-200" onClick={(handleGoogleAuth)}>
           <FcGoogle size={20} />
           <span>Sign In with Google</span>
-        </button>        
+        </button>
         {/* Already have account */}
 
 
