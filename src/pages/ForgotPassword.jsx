@@ -48,7 +48,7 @@ function ForgotPassword() {
     try {
       const result = await axios.post(
         `${serverUrl}/api/auth/send-otp`,
-        { email : email.toLowerCase().trim() },
+        { email: email.toLowerCase().trim() },
         { withCredentials: true }
       );
 
@@ -68,7 +68,7 @@ function ForgotPassword() {
       const result = await axios.post(
         `${serverUrl}/api/auth/verify-otp`,
         {
-          email:email.toLowerCase().trim(),
+          email: email.toLowerCase().trim(),
           otp,
         },
         { withCredentials: true }
@@ -77,9 +77,7 @@ function ForgotPassword() {
       console.log(result);
       setStep(3);
     } catch (error) {
-          error.response?.data?.message || "Invalid OTP"
-
-      
+      setErrorMsg(error.response?.data?.message || "Invalid OTP");
     }
   };
   const handleResetPassword = async () => {
@@ -99,20 +97,18 @@ function ForgotPassword() {
       const result = await axios.post(
         `${serverUrl}/api/auth/reset-password`,
         {
-          email:email.toLowerCase().trim(),
+          email: email.toLowerCase().trim(),
           otp,
           newPassword: password,
         },
         { withCredentials: true }
       );
-       setMessage("Password reset successfully");
-    setTimeout(() => navigate("/signin"), 1500);
-
-      navigate("/signin");
+      setMessage("Password reset successfully");
+      setTimeout(() => navigate("/signin"), 1500);
     } catch (error) {
       setErrorMsg(
-      error.response?.data?.message || "Failed to reset password"
-    );
+        error.response?.data?.message || "Failed to reset password"
+      );
     }
   };
 
@@ -132,7 +128,7 @@ function ForgotPassword() {
           </h1>
         </div>
 
-        
+
         {/* Step 1 - Enter Email */}
         {step === 1 && (
           <div>
@@ -376,11 +372,10 @@ function ForgotPassword() {
             <button
               disabled={!password || password !== confirmPassword}
               className={`w-full font-semibold mt-4 py-2 rounded-lg transition duration-200
-        ${
-          !password || password !== confirmPassword
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-[#ff4d2d] text-white hover:bg-[#e64323]"
-        }`}
+        ${!password || password !== confirmPassword
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#ff4d2d] text-white hover:bg-[#e64323]"
+                }`}
               onClick={handleResetPassword}
             >
               Reset Password
