@@ -1,28 +1,33 @@
-import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import SignUp from './pages/SignUp'
-import SignIns from './pages/SignIns'
-import ForgotPassword from './pages/ForgotPassword'
-import useGetCurrentUser from './pages/hooks/useGetCurrentUser.jsx'
-import { setUserData } from "./redux/userSlice"
-import { useSelector } from 'react-redux'
-import Home from './pages/Home'
-import { serverUrl } from './config'
+import React from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
+import Nav from './components/Nav.jsx';
+import SignUp from './pages/SignUp.jsx';
+import SignIn from './pages/SignIns.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import Home from './pages/Home.jsx';
+import useGetCurrentUser from './hooks/useGetCurrentUser.jsx';
+import useGetCity from './hooks/useGetCity.jsx';
 function App() {
-  useGetCurrentUser()
-  const { userData } = useSelector(state => state.user)//redux se user data le raha hu
+  useGetCurrentUser();
+  useGetCity();
+  const { userData } = useSelector(state => state.user);
+
   return (
-    <div>
+    <div className={userData ? 'pt-[80px]' : ''}>
+
+
+      {userData && <Nav />}
+
       <Routes>
-        {/*<Route path="/" element={<SignIns />} />*/}
-        <Route path="/signup" element={!userData ? <SignUp /> : <Navigate to={"/"} />} />
-        <Route path="/signin" element={!userData ? <SignIns /> : <Navigate to={"/"} />} />
-        <Route path="/forgot-password" element={!userData ? <ForgotPassword /> : <Navigate to={"/"} />} />
-        <Route path="/" element={userData ? <Home /> : <Navigate to={"/signin"} />} />
+        <Route path="/signup" element={!userData ? <SignUp /> : <Navigate to="/" />} />
+        <Route path="/signin" element={!userData ? <SignIn /> : <Navigate to="/" />} />
+        <Route path="/forgot-password" element={!userData ? <ForgotPassword /> : <Navigate to="/" />} />
+        <Route path="/" element={userData ? <Home /> : <Navigate to="/signin" />} />
       </Routes>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

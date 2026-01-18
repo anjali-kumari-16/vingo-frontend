@@ -88,10 +88,11 @@ function SignUp() {
 
     try {
       const { data } = await axios.post(`${serverUrl}/api/auth/google-auth`, {
-        fullName: result.user.displayName,
-        email: result.user.email,
-        role,
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
         mobileNumber: formData.mobileNumber,
+        role: formData.role,
       }, { withCredentials: true });
       dispatch(setUserData(data))
 

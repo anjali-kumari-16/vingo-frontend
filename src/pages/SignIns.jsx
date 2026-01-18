@@ -11,6 +11,7 @@ import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../redux/userSlice";
+
 axios.defaults.withCredentials = true;
 
 
@@ -56,7 +57,10 @@ function SignIns() {
     try {
       const result = await signInWithPopup(auth, provider);
       const { data } = await axios.post(`${serverUrl}/api/auth/google-auth`, {
-        email: result.user.email
+        email: result.user.email,
+        fullName: result.user.displayName,
+        mobileNumber: "Google Auth", // Placeholder as mobile is usually required
+        role: "user"
       }, { withCredentials: true });
       dispatch(setUserData(data))
 
@@ -88,6 +92,12 @@ function SignIns() {
           SigIn In to your account to get started with delicious recipes and meal
           planning in food delivery app.
         </p>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
 
         {/*Email*/}
         <div className="mb-4">
