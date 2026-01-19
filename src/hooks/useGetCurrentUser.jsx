@@ -1,26 +1,32 @@
 import { useEffect } from "react";
-import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../redux/userSlice";
-import { serverUrl } from "../config";
-axios.defaults.withCredentials = true;
-
+import axiosBackend from "../api/axiosBackend";
 
 function useGetCurrentUser() {
   const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+
+      // 🔴 STOP API call if user not logged in
+      if (!token) {
+        dispatch(setUserData(null));
+        return;
+      }
+
       try {
-        const result = await axios.get(
-          `${serverUrl}/api/user/me`,
-          { withCredentials: true }
-        );
+        const result = await axiosBackend.get("/api/user/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         dispatch(setUserData(result.data.user));
       } catch (error) {
-        dispatch(setUserData(null)); // ✅ clear user
-
-        console.log("No user logged in");
+        dispatch(setUserData(null));
+        console.log("Session expired or invalid token");
       }
     };
 

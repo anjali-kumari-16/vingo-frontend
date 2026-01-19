@@ -7,7 +7,7 @@ import { Provider } from 'react-redux';
 import store from './redux/store'
 import axios from "axios";   
 
-axios.defaults.withCredentials = true; // 👈 ADD THIS (GLOBAL)
+axios.defaults.withCredentials = true; 
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
